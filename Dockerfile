@@ -1,35 +1,43 @@
-ARG UBUNTU_VERSION=20.04
+# Modified from Drawpile's build scripts
+# https://github.com/drawpile/Drawpile/tree/master/pkg/docker
 
-FROM ubuntu:${UBUNTU_VERSION} as builder
+ARG ALPINE_VERSION=3.9
+
+FROM alpine:${ALPINE_VERSION} as common
+RUN apk add --no-cache qt5-qtbase qt5-qtbase-x11 libbz2
+
+FROM common as builder
+
 WORKDIR /build
 
-RUN apt-get update \
-	&& DEBIAN_FRONTEND=noninteractive apt-get -yq install --no-install-recommends build-essential cmake extra-cmake-modules libkf5archive-dev qtdeclarative5-dev qtmultimedia5-dev libqt5svg5-dev libvpx-dev libgif-dev wget ca-certificates unzip
+RUN apk add qt5-qtbase-dev qt5-qtsvg-dev qt5-qtmultimedia-dev cmake make g++
+
+COPY ./build-deps.sh .
+RUN ./build-deps.sh
 
 ARG DRAWPILE_VERSION=master
 RUN wget https://github.com/drawpile/Drawpile/archive/${DRAWPILE_VERSION}.zip -O ./drawpile.zip
 COPY ./build.sh .
 RUN ./build.sh
 
-FROM ubuntu:${UBUNTU_VERSION}
 
-COPY --from=builder /build/bin/dprectool /usr/local/bin
-COPY --from=builder /build/bin/drawpile-cmd /usr/local/bin
+FROM common
 
-RUN apt-get update \
-	&& apt-get -y install --no-install-recommends libgif7 libkf5archive5 libqt5svg5 libvpx6 \
-	&& rm -rf /var/lib/apt/lists/*
+COPY --from=builder /build/karchive*/build/bin/libKF5* /usr/lib/
+COPY --from=builder /build/bin/dprectool /bin
+COPY --from=builder /build/bin/drawpile-cmd /bin
 
 WORKDIR /drawpile
-RUN addgroup --system drawpile
-RUN adduser \
+RUN addgroup --system drawpile \
+	&& \
+	adduser \
 	--system \
 	--home /drawpile --no-create-home \
-	--disabled-login --disabled-password \
+	--disabled-password \
 	--ingroup drawpile \
 	drawpile
 
 USER drawpile
-ENTRYPOINT [ "drawpile-cmd" ]
+ENTRYPOINT [ "/bin/drawpile-cmd" ]
 
 LABEL maintainer="Eliot Partridge <byte@code.horse>"
