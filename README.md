@@ -25,6 +25,8 @@ $ docker run --rm -it \
 	--help # flags for dprectool go here
 ```
 
+`/drawpile/output` can be used as an output directory which is guaranteed writeable by the container, if you'd like to mount over this with a volume.
+
 ## Known issues
 
 - `drawpile-cmd -a` (merge annotations) doesn't work. This is probably due to the minimal image not including any fonts (yay Alpine!), or anything to handle fonts. 

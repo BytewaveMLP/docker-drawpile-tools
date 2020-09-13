@@ -29,13 +29,14 @@ COPY --from=builder /build/bin/drawpile-cmd /bin
 
 WORKDIR /drawpile
 RUN addgroup --system drawpile \
-	&& \
-	adduser \
+	&& adduser \
 	--system \
 	--home /drawpile --no-create-home \
 	--disabled-password \
 	--ingroup drawpile \
-	drawpile
+	drawpile \
+	&& mkdir -p output \
+	&& chown -R drawpile:drawpile .
 
 USER drawpile
 ENTRYPOINT [ "/bin/drawpile-cmd" ]
